@@ -1,15 +1,16 @@
-import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Banner from "./components/Banner";
 import Header from "./components/Header";
 import MovieList from "./components/MovieList";
-import { useState } from "react";
+import UserProfile from "./components/UserProfile";
+import { useState, useEffect } from "react";
 import MovieSearch from "./components/MovieSearch";
 import { MovieProvider } from "./context/MovieDetailContext";
+import DetailMovie from "./components/DetailMovie";
 
 function App() {
   const [trendingMovies, setTrendingMovies] = useState([]);
   const [topRatedMovies, setTopRatedMovies] = useState([]);
-
   const [searchData, setSearchData] = useState([]);
 
   const handleSearch = async (value) => {
@@ -36,7 +37,6 @@ function App() {
       const urls = [
         "https://api.themoviedb.org/3/trending/movie/day?language=vi",
         "https://api.themoviedb.org/3/movie/top_rated?language=vi",
-        // Add more URLs here...
       ];
       const options = {
         method: "GET",
@@ -51,7 +51,6 @@ function App() {
 
       try {
         const response = await Promise.all(urls.map(fetchMovies));
-
         setTrendingMovies(response[0].results);
         setTopRatedMovies(response[1].results);
       } catch (error) {
@@ -61,22 +60,38 @@ function App() {
   }, []);
 
   return (
-    <>
+    <Router>
       <MovieProvider>
         <div className="h-full bg-black text-white min-h-screen pb-10 relative">
           <Header onSearch={handleSearch} />
-          <Banner />
-          {searchData.length === 0 && (
-            <MovieList title="Phim Hot" data={trendingMovies.slice(0, 10)} />
-          )}
-          {searchData.length === 0 && (
-            <MovieList title="Phim đề cử" data={topRatedMovies.slice(0, 10)} />
-          )}
-
-          {searchData.length > 0 && <MovieSearch data={searchData} />}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <Banner />
+                  {searchData.length === 0 && (
+                    <MovieList
+                      title="Phim Hot"
+                      data={trendingMovies.slice(0, 10)}
+                    />
+                  )}
+                  {searchData.length === 0 && (
+                    <MovieList
+                      title="Phim đề cử"
+                      data={topRatedMovies.slice(0, 10)}
+                    />
+                  )}
+                  {searchData.length > 0 && <MovieSearch data={searchData} />}
+                </>
+              }
+            />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/detail" element={<DetailMovie />} />
+          </Routes>
         </div>
       </MovieProvider>
-    </>
+    </Router>
   );
 }
 

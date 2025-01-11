@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FaRegWindowClose } from "react-icons/fa";
 import Login from "./login";
 import Register from "./register";
+import { FaRegUser, FaSearch } from "react-icons/fa";
 
 const Header = ({ onSearch }) => {
   const [search, setSearch] = useState("");
@@ -22,27 +23,30 @@ const Header = ({ onSearch }) => {
           <a href="#" className="hover:text-red-700">
             Contact
           </a>
+          <a href="/detail" className="hover:text-red-700">
+            Detail
+          </a>
         </nav>
       </div>
       <div className="flex items-center space-x-5">
         <input
           type="text"
           placeholder="Search"
-          className="border border-gray-300 p-2 text-black"
+          className="border border-gray-300 py-1 text-[18px] px-3 rounded-2xl text-black"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <button
-          className="bg-red-700 text-white px-3 py-1 rounded-lg"
+          className="bg-red-700 text-white p-[12px] rounded-lg"
           onClick={() => onSearch(search)}
         >
-          Search
+          <FaSearch />
         </button>
         <button
-          className="bg-teal-500 text-white px-4 py-2 rounded-lg"
+          className="bg-teal-500 text-white p-3 text-xl rounded-full"
           onClick={() => setCurrentForm("login")} 
         >
-          Đăng nhập
+          <FaRegUser />
         </button>
       </div>
 
