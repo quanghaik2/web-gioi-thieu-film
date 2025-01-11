@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
-import { FaStar, FaClock, FaCalendarAlt, FaFilm } from "react-icons/fa";
+import { useContext, useEffect, useState } from "react";
+import { FaStar, FaClock, FaCalendarAlt, FaFilm, FaPlay, FaHeart } from "react-icons/fa";
 import "../../public/css/DetailMovie.css";
+import { useParams } from "react-router-dom";
+import { MovieContext } from "../context/MovieDetailContext";
 
 function DetailMovie() {
+  const { handleVideoTrailer } = useContext(MovieContext);
   const [movieDetails, setMovieDetails] = useState(null);
-  const movieId = 402431; // ID của bộ phim cần lấy chi tiết
-  const url = `https://api.themoviedb.org/3/movie/${movieId}?language=vi`;
+  const [error, setError] = useState(null); // Trạng thái lỗi
+  const { id } = useParams(); // Lấy id từ URL
+  const url = `https://api.themoviedb.org/3/movie/${id}?language=vi`;
 
   const options = {
     method: "GET",
@@ -20,17 +24,21 @@ function DetailMovie() {
       try {
         const response = await fetch(url, options);
         if (!response.ok) {
-          throw new Error("Failed to fetch data");
+          throw new Error("Không tìm thấy phim với ID này.");
         }
         const data = await response.json();
         setMovieDetails(data); // Lưu dữ liệu vào state
       } catch (error) {
-        console.error("Error fetching movie details:", error);
+        setError(error.message); // Lưu thông báo lỗi vào state
       }
     };
 
     fetchMovieDetails();
-  }, []); // useEffect chỉ chạy một lần khi component được render
+  }, [id]); // useEffect chạy lại khi `id` thay đổi
+
+  if (error) {
+    return <div className="error bg-white">❌ {error}</div>; // Hiển thị lỗi
+  }
 
   if (!movieDetails) {
     return <div className="loading">Loading...</div>; // Hiển thị khi dữ liệu chưa được tải xong
@@ -68,6 +76,21 @@ function DetailMovie() {
             alt={title}
             className="poster"
           />
+          {/* Nút Play Trailer và Add to Favorites */}
+          <div className="button-group">
+            <button
+              className="btn play-trailer"
+              onClick={() => handleVideoTrailer(id)}
+            >
+              <FaPlay className="icon" /> Play Trailer
+            </button>
+            <button
+              className="btn add-to-favorites"
+              onClick={() => console.log(`Added ${title} to favorites!`)}
+            >
+              <FaHeart className="icon" /> Add to Favorites
+            </button>
+          </div>
         </div>
         <div className="info-section">
           <h1 className="title">

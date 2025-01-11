@@ -1,8 +1,9 @@
 import PropTypes from "prop-types";
-import { useContext } from "react";
+//import { useContext } from "react";
 import Carousel from "react-multi-carousel";
 import "react-multi-carousel/lib/styles.css";
-import { MovieContext } from "../context/MovieDetailContext";
+//import { MovieContext } from "../context/MovieDetailContext";
+import { useNavigate } from "react-router-dom";
 
 const responsive = {
   superLargeDesktop: {
@@ -24,8 +25,9 @@ const responsive = {
 };
 
 const MovieList = ({ title, data }) => {
-  const { handleVideoTrailer } = useContext(MovieContext);
-
+ // const { handleVideoTrailer } = useContext(MovieContext);
+  const navigate = useNavigate();
+  // onClick={() => handleVideoTrailer(movie.id)}
   return (
     <div className="my-10 px-10 max-w-full ">
         {console.log({a1: data})}
@@ -40,7 +42,7 @@ const MovieList = ({ title, data }) => {
                 movie.poster_path
               })`: "../assets/404.png"}`,
             }}
-            onClick={() => handleVideoTrailer(movie.id)}
+            onClick={() => navigate(`/detail/${movie.id}`)}
           >
             <div className="bg-black w-full h-full opacity-40 absolute top-0 left-0 z-0" />
             <div className="relative  p-4 flex flex-col items-center justify-end h-full">
