@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 
 const UserProfile = () => {
@@ -6,35 +6,103 @@ const UserProfile = () => {
     name: 'Nguyễn Văn A',
     age: 25,
     email: 'nguyenvana@example.com',
-    favoriteMovies: ['Phim Hành Động', 'Phim Khoa Học Viễn Tưởng'],
+    favoriteMovies: [],
   });
-
   const [newMovie, setNewMovie] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserInfo({ ...userInfo, [name]: value });
-  };
+  // Lấy userId từ localStorage
+  const userId = localStorage.getItem('userId');
 
-  const handleAddMovie = () => {
-    if (newMovie.trim()) {
-      setUserInfo({
-        ...userInfo,
-        favoriteMovies: [...userInfo.favoriteMovies, newMovie.trim()],
+  // Gọi API để lấy danh sách phim yêu thích
+  useEffect(() => {
+    const fetchFavoriteMovies = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/favorite-movies/${userId}`);
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách phim yêu thích.');
+        }
+
+        const data = await response.json();
+        setUserInfo((prevInfo) => ({
+          ...prevInfo,
+          favoriteMovies: data.movies.map((movie) => movie.title), // Chỉ lưu tên phim
+        }));
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách phim:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFavoriteMovies();
+  }, [userId]);
+
+  // Xử lý thêm phim mới
+  const handleAddMovie = async () => {
+    if (!newMovie.trim()) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/favorite-movies/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          title: newMovie.trim(),
+          genre: 'Unknown', // Thêm thông tin thể loại nếu có
+          releaseDate: 'Unknown', // Thêm ngày phát hành nếu có
+          rating: 0, // Điểm đánh giá mặc định
+          poster: '', // URL poster mặc định nếu có
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Không thể thêm phim vào danh sách yêu thích.');
+      }
+
+      const data = await response.json();
+      setUserInfo((prevInfo) => ({
+        ...prevInfo,
+        favoriteMovies: data.favoriteMovies.movies.map((movie) => movie.title),
+      }));
       setNewMovie('');
+    } catch (error) {
+      console.error('Lỗi khi thêm phim:', error);
     }
   };
 
-  const handleDeleteMovie = (index) => {
-    const updatedMovies = userInfo.favoriteMovies.filter((_, i) => i !== index);
-    setUserInfo({ ...userInfo, favoriteMovies: updatedMovies });
+  // Xử lý xóa phim yêu thích
+  const handleDeleteMovie = async (index) => {
+    const movieTitle = userInfo.favoriteMovies[index];
+    try {
+      const response = await fetch(`http://localhost:3000/api/favorite-movies/remove`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, movieTitle }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xóa phim khỏi danh sách yêu thích.');
+      }
+
+      const data = await response.json();
+      setUserInfo((prevInfo) => ({
+        ...prevInfo,
+        favoriteMovies: data.favoriteMovies.movies.map((movie) => movie.title),
+      }));
+    } catch (error) {
+      console.error('Lỗi khi xóa phim:', error);
+    }
   };
 
-  const handleSave = () => {
-    alert('Thông tin đã được lưu!');
-    console.log('Thông tin cá nhân:', userInfo);
-  };
+  // Hiển thị trạng thái tải
+  if (loading) {
+    return <div className="loading">Đang tải dữ liệu...</div>;
+  }
 
   return (
     <div className="w-full text-black h-dvh mt-32 mx-auto bg-white shadow-md rounded-lg overflow-hidden">
@@ -50,41 +118,7 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* Các trường thông tin */}
-        <div className="grid w-2/4 mx-auto grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tên:</label>
-            <input
-              type="text"
-              name="name"
-              value={userInfo.name}
-              onChange={handleInputChange}
-              className="mt-1 p-2 w-full border rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Độ tuổi:</label>
-            <input
-              type="number"
-              name="age"
-              value={userInfo.age}
-              onChange={handleInputChange}
-              className="mt-1 p-2 w-full border rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={userInfo.email}
-              onChange={handleInputChange}
-              className="mt-1 p-2 w-full border rounded-md"
-            />
-          </div>
-        </div>
-
-        {/* Danh sách yêu thích */}
+        {/* Danh sách phim yêu thích */}
         <div className="mb-6 w-1/2 mx-auto">
           <h2 className="text-lg font-semibold mb-2">Danh sách phim yêu thích</h2>
           <div className="bg-gray-50 p-4 rounded-md border">
@@ -118,16 +152,6 @@ const UserProfile = () => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Nút lưu */}
-        <div className="text-center">
-          <button
-            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-700"
-            onClick={handleSave}
-          >
-            Lưu thay đổi
-          </button>
         </div>
       </div>
     </div>

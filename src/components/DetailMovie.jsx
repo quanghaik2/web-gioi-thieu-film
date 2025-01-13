@@ -7,15 +7,15 @@ import { MovieContext } from "../context/MovieDetailContext";
 function DetailMovie() {
   const { handleVideoTrailer } = useContext(MovieContext);
   const [movieDetails, setMovieDetails] = useState(null);
-  const [error, setError] = useState(null); // Trạng thái lỗi
-  const { id } = useParams(); // Lấy id từ URL
+  const [error, setError] = useState(null);
+  const { id } = useParams();
   const url = `https://api.themoviedb.org/3/movie/${id}?language=vi`;
 
   const options = {
     method: "GET",
     headers: {
       accept: "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_API_KEY}`, // Sử dụng API key từ biến môi trường
+      Authorization: `Bearer ${import.meta.env.VITE_API_KEY}`,
     },
   };
 
@@ -27,21 +27,58 @@ function DetailMovie() {
           throw new Error("Không tìm thấy phim với ID này.");
         }
         const data = await response.json();
-        setMovieDetails(data); // Lưu dữ liệu vào state
+        setMovieDetails(data);
       } catch (error) {
-        setError(error.message); // Lưu thông báo lỗi vào state
+        setError(error.message);
       }
     };
 
     fetchMovieDetails();
-  }, [id]); // useEffect chạy lại khi `id` thay đổi
+  }, [id]);
+
+  const handleAddToFavorites = async () => {
+    const userId = localStorage.getItem("userId"); // Lấy userId từ localStorage
+    if (!userId) {
+      alert("Bạn cần đăng nhập để thêm phim vào danh sách yêu thích.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/favorite-movies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          title: movieDetails.title,
+          genre: movieDetails.genres.map((genre) => genre.name).join(", "),
+          releaseDate: movieDetails.release_date,
+          rating: movieDetails.vote_average,
+          poster: `https://image.tmdb.org/t/p/w500${movieDetails.poster_path}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Không thể thêm phim vào danh sách yêu thích.");
+      }
+
+      const data = await response.json();
+      alert("Đã thêm phim vào danh sách yêu thích!");
+      console.log("Danh sách yêu thích:", data.favoriteMovies);
+    } catch (err) {
+      console.error("Lỗi:", err.message);
+      alert("Đã xảy ra lỗi khi thêm phim vào danh sách yêu thích.");
+    }
+  };
 
   if (error) {
-    return <div className="error bg-white">❌ {error}</div>; // Hiển thị lỗi
+    return <div className="error bg-white">❌ {error}</div>;
   }
 
   if (!movieDetails) {
-    return <div className="loading">Loading...</div>; // Hiển thị khi dữ liệu chưa được tải xong
+    return <div className="loading">Loading...</div>;
   }
 
   const {
@@ -58,7 +95,6 @@ function DetailMovie() {
 
   return (
     <div className="detail-page mt-12">
-      {/* Background và overlay */}
       <div
         className="background"
         style={{
@@ -68,7 +104,6 @@ function DetailMovie() {
         <div className="overlay"></div>
       </div>
 
-      {/* Nội dung */}
       <div className="content">
         <div className="poster-section">
           <img
@@ -76,7 +111,6 @@ function DetailMovie() {
             alt={title}
             className="poster"
           />
-          {/* Nút Play Trailer và Add to Favorites */}
           <div className="button-group">
             <button
               className="btn play-trailer"
@@ -86,7 +120,7 @@ function DetailMovie() {
             </button>
             <button
               className="btn add-to-favorites"
-              onClick={() => console.log(`Added ${title} to favorites!`)}
+              onClick={handleAddToFavorites} // Gọi API thêm phim vào danh sách yêu thích
             >
               <FaHeart className="icon" /> Add to Favorites
             </button>
