@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
+import axios from 'axios';
 
 const UserProfile = () => {
   const [userInfo, setUserInfo] = useState({
@@ -11,97 +12,83 @@ const UserProfile = () => {
   const [newMovie, setNewMovie] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Lấy userId từ localStorage
-  const userId = localStorage.getItem('userId');
+  const userId = '677b7257afff6ec1f07f503e'; // ID người dùng
+  const apiUrl = `http://localhost:3000/api/favorite-movies/${userId}`;
 
-  // Gọi API để lấy danh sách phim yêu thích
+  // Lấy dữ liệu từ API
   useEffect(() => {
     const fetchFavoriteMovies = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/favorite-movies/${userId}`);
-        if (!response.ok) {
-          throw new Error('Không thể tải danh sách phim yêu thích.');
-        }
+        const response = await axios.get(apiUrl);
+        const { user, movies } = response.data;
 
-        const data = await response.json();
-        setUserInfo((prevInfo) => ({
-          ...prevInfo,
-          favoriteMovies: data.movies.map((movie) => movie.title), // Chỉ lưu tên phim
+        setUserInfo((prev) => ({
+          ...prev,
+          name: user.username,
+          email: user.email,
+          favoriteMovies: movies.map((movie) => ({
+            title: movie.title,
+            genre: movie.genre,
+            releaseDate: movie.releaseDate,
+            poster: movie.poster,
+            id: movie._id,
+          })),
         }));
+        setLoading(false);
       } catch (error) {
-        console.error('Lỗi khi tải danh sách phim:', error);
-      } finally {
+        console.error('Lỗi khi lấy dữ liệu từ API:', error);
         setLoading(false);
       }
     };
 
     fetchFavoriteMovies();
-  }, [userId]);
+  }, [apiUrl]);
 
-  // Xử lý thêm phim mới
-  const handleAddMovie = async () => {
-    if (!newMovie.trim()) return;
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo({ ...userInfo, [name]: value });
+  };
 
-    try {
-      const response = await fetch(`http://localhost:3000/api/favorite-movies/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          title: newMovie.trim(),
-          genre: 'Unknown', // Thêm thông tin thể loại nếu có
-          releaseDate: 'Unknown', // Thêm ngày phát hành nếu có
-          rating: 0, // Điểm đánh giá mặc định
-          poster: '', // URL poster mặc định nếu có
-        }),
+  const handleAddMovie = () => {
+    if (newMovie.trim()) {
+      setUserInfo({
+        ...userInfo,
+        favoriteMovies: [
+          ...userInfo.favoriteMovies,
+          { title: newMovie.trim(), id: Date.now().toString() }, // Tạo ID giả cho phim mới
+        ],
       });
-
-      if (!response.ok) {
-        throw new Error('Không thể thêm phim vào danh sách yêu thích.');
-      }
-
-      const data = await response.json();
-      setUserInfo((prevInfo) => ({
-        ...prevInfo,
-        favoriteMovies: data.favoriteMovies.movies.map((movie) => movie.title),
-      }));
       setNewMovie('');
-    } catch (error) {
-      console.error('Lỗi khi thêm phim:', error);
     }
   };
 
-  // Xử lý xóa phim yêu thích
-  const handleDeleteMovie = async (index) => {
-    const movieTitle = userInfo.favoriteMovies[index];
+  const handleDeleteMovie = async (movieId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/favorite-movies/remove`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, movieTitle }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể xóa phim khỏi danh sách yêu thích.');
+      const response = await axios.delete(
+        `http://localhost:3000/api/favorite-movies/${userId}/${movieId}`
+      );
+      if (response.status === 200) {
+        // Cập nhật danh sách phim sau khi xóa thành công
+        const updatedMovies = userInfo.favoriteMovies.filter((movie) => movie.id !== movieId);
+        setUserInfo({ ...userInfo, favoriteMovies: updatedMovies });
+        alert('Xóa phim thành công!');
+      } else {
+        console.error('Xóa phim không thành công:', response.statusText);
+        alert('Có lỗi xảy ra khi xóa phim.');
       }
-
-      const data = await response.json();
-      setUserInfo((prevInfo) => ({
-        ...prevInfo,
-        favoriteMovies: data.favoriteMovies.movies.map((movie) => movie.title),
-      }));
     } catch (error) {
-      console.error('Lỗi khi xóa phim:', error);
+      console.error('Lỗi khi gọi API xóa phim:', error);
+      alert('Không thể xóa phim. Vui lòng thử lại sau.');
     }
   };
 
-  // Hiển thị trạng thái tải
+  const handleSave = () => {
+    alert('Thông tin đã được lưu!');
+    console.log('Thông tin cá nhân:', userInfo);
+  };
+
   if (loading) {
-    return <div className="loading">Đang tải dữ liệu...</div>;
+    return <div>Đang tải dữ liệu...</div>;
   }
 
   return (
@@ -118,19 +105,63 @@ const UserProfile = () => {
           </div>
         </div>
 
+        {/* Các trường thông tin */}
+        <div className="grid w-2/4 mx-auto grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tên:</label>
+            <input
+              type="text"
+              name="name"
+              value={userInfo.name}
+              onChange={handleInputChange}
+              className="mt-1 p-2 w-full border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Độ tuổi:</label>
+            <input
+              type="number"
+              name="age"
+              value={userInfo.age}
+              onChange={handleInputChange}
+              className="mt-1 p-2 w-full border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email:</label>
+            <input
+              type="email"
+              name="email"
+              value={userInfo.email}
+              onChange={handleInputChange}
+              className="mt-1 p-2 w-full border rounded-md"
+            />
+          </div>
+        </div>
+
         {/* Danh sách phim yêu thích */}
         <div className="mb-6 w-1/2 mx-auto">
           <h2 className="text-lg font-semibold mb-2">Danh sách phim yêu thích</h2>
           <div className="bg-gray-50 p-4 rounded-md border">
-            {userInfo.favoriteMovies.map((movie, index) => (
+            {userInfo.favoriteMovies.map((movie) => (
               <div
-                key={index}
+                key={movie.id}
                 className="flex items-center justify-between p-2 border-b last:border-b-0"
               >
-                <span>{movie}</span>
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={movie.poster}
+                    alt={movie.title}
+                    className="w-12 h-16 object-cover rounded-md"
+                  />
+                  <div>
+                    <p className="font-bold">{movie.title}</p>
+                    <p className="text-sm text-gray-500">{movie.genre}</p>
+                  </div>
+                </div>
                 <button
                   className="text-red-500 hover:text-red-700"
-                  onClick={() => handleDeleteMovie(index)}
+                  onClick={() => handleDeleteMovie(movie.id)} // Gọi API xóa
                 >
                   <FaTrash />
                 </button>
@@ -152,6 +183,16 @@ const UserProfile = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Nút lưu */}
+        <div className="text-center">
+          <button
+            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-700"
+            onClick={handleSave}
+          >
+            Lưu thay đổi
+          </button>
         </div>
       </div>
     </div>
