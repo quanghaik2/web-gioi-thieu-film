@@ -4,16 +4,26 @@ import { FaRegWindowClose } from "react-icons/fa";
 import Login from "./login";
 import Register from "./register";
 import { FaRegUser, FaSearch } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ onSearch }) => {
   const [search, setSearch] = useState("");
   const [currentForm, setCurrentForm] = useState("");
+  const isLogin = localStorage.getItem("userId");
+  const navigate = useNavigate();
+  const handleUser = () => {
+    if (isLogin) {
+      navigate("/profile");
+    } else {
+      setCurrentForm("login");
+    }
+  }
 
   return (
     <div className="p-4 flex justify-between  fixed top-0 left-0 w-full z-[9999]  bg-black">
       <div className="flex items-center gap-8">
-        <h1 className="text-[30px] uppercase text-red-700 font-bold">Movie</h1>
-        <nav className="hidden md:flex items-center space-x-5">
+        <h1 className="text-[30px] uppercase text-red-700 font-bold"><a href="/">LiST MOVIE</a></h1>
+        {/* <nav className="hidden md:flex items-center space-x-5">
           <a href="#" className="hover:text-red-700">
             Home
           </a>
@@ -26,7 +36,7 @@ const Header = ({ onSearch }) => {
           <a href="/detail" className="hover:text-red-700">
             Detail
           </a>
-        </nav>
+        </nav> */}
       </div>
       <div className="flex items-center space-x-5">
         <input
@@ -44,7 +54,7 @@ const Header = ({ onSearch }) => {
         </button>
         <button
           className="bg-teal-500 text-white p-3 text-xl rounded-full"
-          onClick={() => setCurrentForm("login")} 
+          onClick={handleUser} 
         >
           <FaRegUser />
         </button>

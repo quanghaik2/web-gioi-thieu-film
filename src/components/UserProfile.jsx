@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
+import { MdOutlineLogout } from "react-icons/md";
 import axios from 'axios';
 
 const UserProfile = () => {
@@ -24,7 +25,7 @@ const UserProfile = () => {
 
         setUserInfo((prev) => ({
           ...prev,
-          name: user.username,
+          name: user.name,
           email: user.email,
           favoriteMovies: movies.map((movie) => ({
             title: movie.title,
@@ -82,10 +83,32 @@ const UserProfile = () => {
     }
   };
 
-  const handleSave = () => {
-    alert('Thông tin đã được lưu!');
-    console.log('Thông tin cá nhân:', userInfo);
+  const handleLogout = () => {
+    localStorage.removeItem('userId');
+    window.location.href = '/';
   };
+
+  const handleSave = async () => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3000/api/auth/update/${userId}`, // URL của API server
+        {
+          email: userInfo.email,
+          age: userInfo.age,
+          name: userInfo.name,
+        }
+      );
+  
+      if (response.status === 200) {
+        alert('Thông tin đã được lưu!');
+        console.log('Thông tin cá nhân đã được lưu:', userInfo);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lưu thông tin:', error);
+      alert('Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại sau.');
+    }
+  };
+  
 
   if (loading) {
     return <div>Đang tải dữ liệu...</div>;
@@ -98,7 +121,9 @@ const UserProfile = () => {
 
         {/* Avatar và thông tin cơ bản */}
         <div className="flex items-center justify-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+          <div className="w-16 h-16 bg-green-300 rounded-full flex font-medium items-center justify-center text-white  text-[35px]">
+            {userInfo.name.charAt(0)}
+          </div>
           <div>
             <p className="font-bold text-lg">{userInfo.name}</p>
             <p className="text-gray-600">{userInfo.email}</p>
@@ -167,7 +192,7 @@ const UserProfile = () => {
                 </button>
               </div>
             ))}
-            <div className="flex items-center mt-4">
+            {/* <div className="flex items-center mt-4">
               <input
                 type="text"
                 placeholder="Thêm phim mới"
@@ -181,7 +206,7 @@ const UserProfile = () => {
               >
                 <FaPlus />
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -193,6 +218,12 @@ const UserProfile = () => {
           >
             Lưu thay đổi
           </button>
+        </div>
+
+        <div className='flex items-center text-xl ml-[25%] mt-4 text-red-500 cursor-pointer' 
+          onClick={handleLogout}>
+            <MdOutlineLogout />
+            Đăng xuất
         </div>
       </div>
     </div>

@@ -3,13 +3,16 @@ import { FaStar, FaClock, FaCalendarAlt, FaFilm, FaPlay, FaHeart } from "react-i
 import "../../public/css/DetailMovie.css";
 import { useParams } from "react-router-dom";
 import { MovieContext } from "../context/MovieDetailContext";
+import axios from "axios";
 
 function DetailMovie() {
   const { handleVideoTrailer } = useContext(MovieContext);
   const [movieDetails, setMovieDetails] = useState(null);
+  const [movieId, setMovieId] = useState("");
   const [error, setError] = useState(null);
   const { id } = useParams();
   const url = `https://api.themoviedb.org/3/movie/${id}?language=vi`;
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const options = {
     method: "GET",
@@ -23,11 +26,24 @@ function DetailMovie() {
     const fetchMovieDetails = async () => {
       try {
         const response = await fetch(url, options);
+
         if (!response.ok) {
           throw new Error("Không tìm thấy phim với ID này.");
         }
         const data = await response.json();
         setMovieDetails(data);
+
+        // Kiểm tra xem phim có trong danh sách yêu thích không
+        const userId = localStorage.getItem("userId");
+        if (userId) {
+          const response = await fetch(
+            `http://localhost:3000/api/favorite-movies/isFavorite/${userId}/${data.title}`
+          );
+          const result = await response.json();
+          console.log({ result });
+          setIsFavorite(result.exists);
+          setMovieId(result.movieId);
+        }
       } catch (error) {
         setError(error.message);
       }
@@ -66,10 +82,36 @@ function DetailMovie() {
 
       const data = await response.json();
       alert("Đã thêm phim vào danh sách yêu thích!");
+      setIsFavorite(!isFavorite);
       console.log("Danh sách yêu thích:", data.favoriteMovies);
     } catch (err) {
       console.error("Lỗi:", err.message);
       alert("Đã xảy ra lỗi khi thêm phim vào danh sách yêu thích.");
+    }
+  };
+
+  const handleDeleteToFavorites = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("Bạn cần đăng nhập để thực hiện thao tác này.");
+      return;
+    }
+  
+    try {
+      const response = await axios.delete(
+        `http://localhost:3000/api/favorite-movies/${userId}/${movieId}`
+      );
+  
+      if (response.status === 200) {
+        setIsFavorite(false); // Cập nhật trạng thái yêu thích
+        alert("Đã xóa phim khỏi danh sách yêu thích!");
+      } else {
+        console.error("Xóa phim không thành công:", response.statusText);
+        alert("Có lỗi xảy ra khi xóa phim.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi gọi API xóa phim:", error);
+      alert("Không thể xóa phim. Vui lòng thử lại sau.");
     }
   };
 
@@ -116,14 +158,21 @@ function DetailMovie() {
               className="btn play-trailer"
               onClick={() => handleVideoTrailer(id)}
             >
-              <FaPlay className="icon" /> Play Trailer
+              <FaPlay className="icon" /> Xem Trailer
             </button>
-            <button
-              className="btn add-to-favorites"
-              onClick={handleAddToFavorites} // Gọi API thêm phim vào danh sách yêu thích
-            >
-              <FaHeart className="icon" /> Add to Favorites
-            </button>
+            { isFavorite ? (
+              <button
+                className="btn add-to-favorites"
+                onClick={handleDeleteToFavorites} // Gọi API thêm phim vào danh sách yêu thích
+              >
+                <FaHeart className="icon" /> Bỏ theo dõi
+              </button>) : (
+                <button
+                className="btn add-to-favorites"
+                onClick={handleAddToFavorites} // Gọi API thêm phim vào danh sách yêu thích
+              >
+                <FaHeart className="icon" /> Theo dõi
+              </button>)}
           </div>
         </div>
         <div className="info-section">

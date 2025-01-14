@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 
 
 function Login({ onCloseForm }) {
@@ -8,6 +9,7 @@ function Login({ onCloseForm }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ function Login({ onCloseForm }) {
       alert("Đăng nhập thành công!");
       console.log("Token:", data); // Lưu token này nếu cần (vd: lưu trong localStorage)
       localStorage.setItem("userId", data.userId); // Lưu token vào localStorage
+      navigate("/profile");
       onCloseForm();
     } catch (err) {
       console.error("Lỗi khi kết nối với API:", err);
